@@ -2,49 +2,80 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Language.Lambda
     (
     ) where
 
-import Control.Applicative
 import Data.Attoparsec.ByteString.Char8
+import Data.ByteString.Builder
+import Data.Proxy
+import Control.Applicative
 
--- Naturals for use on the type-level
 data Nat = Z | S Nat
+  deriving Show
+
+-- Links the type- and value-level
+class Value (n :: Nat) where
+    value :: Proxy n -> Nat
+
+instance Value Z where
+    value _ = Z
+
+instance Value n => Value (S n) where
+    value _ = S $ value (Proxy :: Proxy n)
+
 
 -- Finite totally ordered sets, indexed by the naturals
-data Fin (n :: Nat) where
+data Fin n where
     Zero :: Fin (S n)
     Succ :: Fin n -> Fin (S n)
 
-value :: Fin n -> Integer
-value Zero = 0
-value (Succ n) = value n
+-- Why does ghc require this to be a standalone instance declaration?
+deriving instance Show (Fin n)
 
-instance Show (Fin n) where
-    show = show . value
+expand :: Fin n -> Nat
+expand Zero = Z
+expand (Succ n) = S $ expand n
 
--- De Bruijn indexed lambda expressions, where variables are labeled with t's
-data Term (n :: Nat) = Variable (Fin n)
-                     | Application (Term n) (Term n)
-                     | Abstraction (Term (S n))
+-- instance Show (Fin n) where
+--     show = show . expand
+
+-- De Bruijn indexed lambda terms
+data M n = V (Fin n)
+         | A (M n) (M n)
+         | L (M (S n))
   deriving Show
 
-data Expr = Variable' Identifier
-          | Application' Expr Expr
-          | Abstraction' Identifier Expr
+data M' = V' Id
+        | A' M' M'
+        | L' Id M'
   deriving Show
 
-newtype Identifier = Identifier { unwrap :: String }
+newtype Id = Id { unwrap :: String }
   deriving (Eq, Show)
 
-expr :: Parser Expr
-expr = char '(' *> expr' <* char ')'
+identifier :: Parser Id
+identifier = Id <$> many1 letter_ascii
+
+m' :: Parser M'
+m' = V' <$> identifier
+  <|> parens (A' <$> m' <* space <*> m')
+  <|> parens (L' <$> (string "\\ " *> identifier <* string " . ") <*> m')
   where
-    expr' :: Parser Expr
-    expr' = Variable' <$> identifier
-         <|> Application' <$> expr <*> expr
-         <|> Abstraction' <$> (string "\\ " *> identifier <* string " . ") <*> expr'
-    identifier :: Parser Identifier
-    identifier = Identifier <$> many1 letter_ascii
+    parens :: Parser a -> Parser a
+    parens a = char '(' *> a <* char ')'
+
+pprint :: M' -> Builder
+pprint = undefined
+
+dumb :: M Z -> M'
+dumb = undefined
+
+check :: M' -> Either String (M Z)
+check = undefined
+
+beta :: M Z -> M Z
+beta = undefined
