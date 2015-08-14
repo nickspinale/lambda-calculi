@@ -1,11 +1,11 @@
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 
-module Language.Lambda
+module Language.Lambda.Untyped
     (
     ) where
 
@@ -43,7 +43,7 @@ expand (Succ n) = S $ expand n
 -- instance Show (Fin n) where
 --     show = show . expand
 
--- De Bruijn indexed lambda terms
+-- De Bruijn indexed untyped lambda terms
 data M n = V (Fin n)
          | A (M n) (M n)
          | L (M (S n))

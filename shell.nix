@@ -6,7 +6,7 @@ let
 
   f = { mkDerivation, attoparsec, base, stdenv }:
       mkDerivation {
-        pname = "untyped-lambda-calculus";
+        pname = "lambda-calculi";
         version = "0.1.0.0";
         src = ./src;
         buildDepends = [ attoparsec base ];
