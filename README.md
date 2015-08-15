@@ -1,2 +1,2 @@
-# untyped-lambda-calculus
-A type-safe implementation of the untyped lambda calculus.
+# lambda-calculi
+Nifty type-safe implementations of various lambda calculi (currently just untyped and simply typed).

@@ -15,26 +15,27 @@ import Data.ByteString.Builder
 import Data.Proxy
 import Control.Applicative
 
+-- A list of abstraction types, for the type level
 data Context = Nil | Cons Type Context
   deriving Show
 
+-- The type of terms.
 data Type = O | F Type Type
   deriving Show
 
--- Finite totally ordered sets, indexed by the naturals
-data Fin c where
-    Zero :: Proxy t -> Fin (Cons t c)
-    Succ :: Proxy t -> Fin c -> Fin (Cons t c)
-
--- Why does ghc require this to be a standalone instance declaration?
-deriving instance Eq (Fin c)
-deriving instance Show (Fin c)
+-- Finite totally ordered sets, but with type information.
+-- Sorry about not having a better description.
+data Fin (t :: Type) (c :: Context) where
+    Zero :: Fin t (Cons t c)
+    Succ :: Proxy t1 -> Fin t0 c -> Fin t0 (Cons t1 c)
 
 -- De Bruijn indexed typed lambda terms
-data M c where
-    V :: Fin c -> M c
-    A :: M c -> M c -> M c
-    L :: Proxy t -> M (Cons t c)
+data M (t :: Type) (c :: Context) where
+    V :: Fin t c -> M t c
+    A :: M (F a b) c -> M a c -> M b c
+    L :: M t1 (Cons t1 c) -> M (F t0 t1) c
 
-deriving instance Eq (M c)
-deriving instance Show (M c)
+-- deriving instance Eq (Fin c)
+-- deriving instance Show (Fin c)
+-- deriving instance Eq (M t c)
+-- deriving instance Show (M t c)
