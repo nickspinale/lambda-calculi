@@ -4,6 +4,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Language.Lambda.Untyped
     (
@@ -54,8 +59,28 @@ instance Value n => Value (S n) where
 
 -- Finite totally ordered sets, indexed by the naturals
 data Fin n where
-    Zero  :: Fin (S n)
+    Zero :: Fin (S n)
     Succ :: Fin n -> Fin (S n)
+
+data Fins p n = Pos (Fin p) | Neg (Fin n)
+
+-- fin :: FiniF p Z -> Fin (S p)
+-- fin (Pos p) = Succ p
+-- fin Nil = Zero
+
+-- finif :: Fin (S p) -> FiniF p Z
+-- finif (Succ p) = Pos p
+-- finif Zero = Nil
+
+right :: Fins (S p) n -> Fins p (S n)
+right (Pos (Succ p)) = Pos p
+right (Pos Zero) = Neg Zero
+right (Neg n) = Neg $ Succ n
+
+left :: Fins p (S n) -> Fins (S p) n
+left (Pos p) = Pos $ Succ p
+left (Neg Zero) = Pos Zero
+left (Neg (Succ n)) = Neg n
 
 lift :: Fin n -> Fin (S n)
 lift Zero = Zero
@@ -75,10 +100,17 @@ expand (Succ x) = S $ expand x
 --     show = show . expand
 
 -- De Bruijn indexed untyped lambda terms
-data M n = V (Fin n)
-         | A (M n) (M n)
-         | L (M (S n))
-  deriving Show
+type M = MM Fin
+
+data MM f n = V (f n)
+            | A (MM f n) (MM f n)
+            | L (MM f (S n))
+
+mmap :: (forall n. f n -> g n) -> MM f n -> MM g n
+mmap a m = case m of
+    V x -> V (a x)
+    A f x -> A (mmap a f) (mmap a x)
+    L body -> L $ mmap a body
 
 bury :: M n -> M (S n)
 bury m = case m of
@@ -86,22 +118,71 @@ bury m = case m of
     A f x -> A (bury f) (bury x)
     L body -> L (bury body)
 
-substitute :: forall n. Nat -> M n -> M (S n) -> M n
-substitute depth x' body' = case body' of
-    V n -> let go :: Nat -> Fin (S m) -> Maybe (M m)
-               go Z Zero = Nothing
-               go Z (Succ m) = Just $ V m
-               go (S n) Zero = Just $ V Zero
-               go (S n) (Succ m) = go n m
-           in maybe x' id (go depth n)
-    A f x -> A (substitute depth x' f) (substitute depth x' x)
-    L body -> L (substitute (S depth) (bury x') body)
+compare' :: Nat -> Fin n -> Ordering
+compare' (S n) (Succ m) = compare' n m
+compare' Z Zero = EQ
+compare' _ Zero = GT
+compare' Z _    = LT
+
+type family Plus (n :: Nat) (m :: Nat) :: Nat
+type instance Plus n Z = n
+type instance Plus n (S m) = Plus (S n) m
+
+class G a b where
+    g :: Fins a b -> Fin (Plus a b)
+    g :: Fins a b -> Fin (Plus a b)
+
+instance G Z Z where
+    g = undefined
+
+instance G (S a) Z where
+    g (Pos p) = p
+
+instance G (S a) (S b) where
+    g (Pos 
+
+instance G (S a b where
+    g = undefined
+
+-- g :: Fins a b -> Fin (Plus a b)
+-- g (Pos 
+
+substitute :: M n -> M (S n) -> M n
+substitute x' body' = undefined
+  where
+    go :: M n -> MM (Fins n) (S m) -> M n
+    go = undefined
+    -- go x body = case body of
+        -- V (Neg Zero) -> V x
+        -- V (Neg (Succ n)) -> g (Neg n)
+        -- V (Pos p) -> g (Pos p)
+    -- V Zero -> x'
+    -- V (Succ n) -> V n
+    -- A f x -> A (substitute x' f) (substitute x' x)
+    -- L body -> L (substitute (bury x') body)
+
+-- substitute :: forall n. Nat -> M n -> M (S n) -> M n
+-- substitute depth x' body' = case body' of
+--     V Zero -> x'
+--     V (Succ n) -> V n
+--     -- V n -> case compare' depth n of
+--     --         EQ -> body
+--     --         GT -> 
+--            -- let go :: forall m. Nat -> Fin (S m) -> Maybe (Fin m)
+--            --     go = undefined
+--            --     -- go Z Zero = Nothing
+--            --     -- go Z (Succ m) = Just m
+--            --     -- go (S n) Zero = Just (Zero :: Fin m)
+--            --     -- go (S n) (Succ m) = fmap Succ $ go n m
+--            -- in maybe x' V (go depth n)
+--     A f x -> A (substitute depth x' f) (substitute depth x' x)
+--     L body -> L (substitute (S depth) (bury x') body)
 
 -- class Sub (n :: Nat) (m :: Nat) where
 
 beta :: M n -> Maybe (M n)
 beta m = case m of
-    A (L body) x -> Just $ substitute Z x body
+    A (L body) x -> Just $ substitute x body
     L body -> fmap L $ beta body
     _ -> Nothing
 
