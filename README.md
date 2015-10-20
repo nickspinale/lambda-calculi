@@ -10,4 +10,4 @@ data Fin n where
     Succ :: Fin n -> Fin (S n)
 ```
 
-This project is currently on hold, but may someday be used in the implementation of a crappy toy dependantly typed language. We'll see.
+This project is currently on hold, but may someday be used in the implementation of a crappy toy dependantly typed language. Who knows.
