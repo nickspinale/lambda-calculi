@@ -14,7 +14,10 @@
 module Data.Type.Nat
     ( Nat(..)
     , type (+)
+    , Value(..)
     ) where
+
+import Data.Proxy
 
 data Nat = Z | S Nat
 
@@ -22,11 +25,12 @@ type family (n :: Nat) + (m :: Nat) :: Nat
 type instance n + Z = n
 type instance n + (S m) = (S n) + m
 
--- class KnownNat (n :: Nat) where
---     value :: Proxy n -> Nat
+-- Links the type- and value-level
+class Value (n :: Nat) where
+    value :: Proxy n -> Nat
 
--- instance KnownNat Z where
---     value _ = Z
+instance Value Z where
+    value _ = Z
 
--- instance KnownNat n => KnownNat (S n) where
---     value _ = S $ value (Proxy :: Proxy n)
+instance Value n => Value (S n) where
+    value _ = S $ value (Proxy :: Proxy n)

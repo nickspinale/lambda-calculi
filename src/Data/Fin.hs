@@ -12,14 +12,25 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 module Data.Fin
-    ( Fin
+    ( Fin(..)
+    , Fins(..)
+    , Glueable
+    , shift
+    , right
+    , left
+    , lift
+    , expand
     ) where
 
 import Data.Type.Nat
 
+-- Finite totally ordered sets, indexed by the naturals
 data Fin n where
     Zero :: Fin (S n)
     Succ :: Fin n -> Fin (S n)
+
+-- Why does ghc require this to be a standalone instance declaration?
+deriving instance Show (Fin n)
 
 data Fins p n = Pos (Fin p) | Neg (Fin n)
 
@@ -50,4 +61,8 @@ left (Neg (Succ n)) = Neg n
 lift :: Fin n -> Fin (S n)
 lift Zero = Zero
 lift (Succ n) = Succ (lift n)
+
+expand :: Fin n -> Nat
+expand Zero = Z
+expand (Succ x) = S $ expand x
 

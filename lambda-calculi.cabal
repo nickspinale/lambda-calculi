@@ -19,7 +19,6 @@ library
   exposed-modules:     Data.Type.Nat
                        Data.Fin
                        Language.Lambda.Untyped
-                       Language.Lambda.Typed
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.8 && <4.9
