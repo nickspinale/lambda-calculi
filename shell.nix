@@ -1,4 +1,4 @@
-{ nixpkgs ? import <nixpkgs> {}, compiler ? "ghc7101" }:
+{ nixpkgs ? import <nixpkgs> {}, compiler ? "default" }:
 
 let
 
@@ -8,12 +8,16 @@ let
       mkDerivation {
         pname = "lambda-calculi";
         version = "0.1.0.0";
-        src = ./src;
-        buildDepends = [ attoparsec base ];
+        src = ./.;
+        libraryHaskellDepends = [ attoparsec base ];
         license = stdenv.lib.licenses.mit;
       };
 
-  drv = pkgs.haskell.packages.${compiler}.callPackage f {};
+  haskellPackages = if compiler == "default"
+                       then pkgs.haskellPackages
+                       else pkgs.haskell.packages.${compiler};
+
+  drv = haskellPackages.callPackage f {};
 
 in
 
